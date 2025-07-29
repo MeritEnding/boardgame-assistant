@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './App.css'; // 기본 CSS 파일 사용
 
 function App() {
-  // 기존 컨셉 생성 상태
+  // 1. 컨셉 생성 상태
   const [theme, setTheme] = useState('');
   const [playerCount, setPlayerCount] = useState('');
   const [averageWeight, setAverageWeight] = useState(2.0);
@@ -10,7 +10,7 @@ function App() {
   const [loadingConcept, setLoadingConcept] = useState(false);
   const [errorConcept, setErrorConcept] = useState(null);
 
-  // 컨셉 재생성 상태
+  // 2. 컨셉 재생성 상태
   const [regenerateConceptId, setRegenerateConceptId] = useState('');
   const [regeneratePlanId, setRegeneratePlanId] = useState('');
   const [regenerateFeedback, setRegenerateFeedback] = useState('');
@@ -18,42 +18,43 @@ function App() {
   const [loadingRegenerate, setLoadingRegenerate] = useState(false);
   const [errorRegenerate, setErrorRegenerate] = useState(null);
 
-  // 게임 목표 생성 상태
+  // 3. 게임 목표 생성 상태
   const [objectiveConceptId, setObjectiveConceptId] = useState('');
   const [objective, setObjective] = useState(null);
   const [loadingObjective, setLoadingObjective] = useState(false);
   const [errorObjective, setErrorObjective] = useState(null);
 
-  // 구성요소 생성 상태
+  // 4. 구성요소 생성 상태
   const [componentPlanId, setComponentPlanId] = useState('');
   const [components, setComponents] = useState(null);
   const [loadingComponents, setLoadingComponents] = useState(false);
   const [errorComponents, setErrorComponents] = useState(null);
 
-  // 게임 규칙 생성 상태
+  // 5. 게임 규칙 생성 상태
   const [rulesConceptId, setRulesConceptId] = useState('');
   const [rules, setRules] = useState(null);
   const [loadingRules, setLoadingRules] = useState(false);
   const [errorRules, setErrorRules] = useState(null);
 
-  // 게임 규칙 재생성 상태
+  // 6. 게임 규칙 재생성 상태
   const [regenerateRuleId, setRegenerateRuleId] = useState('');
   const [regenerateRuleFeedback, setRegenerateRuleFeedback] = useState('');
   const [regeneratedRule, setRegeneratedRule] = useState(null);
   const [loadingRegenerateRule, setLoadingRegenerateRule] = useState(false);
   const [errorRegenerateRule, setErrorRegenerateRule] = useState(null);
 
-  // 새롭게 추가된 게임 규칙 시뮬레이션 상태
+  // 7. 게임 규칙 시뮬레이션 상태
+ // 새롭게 추가된 게임 규칙 시뮬레이션 상태
   const [simulateRuleId, setSimulateRuleId] = useState('');
-  const [simulatePlanId, setSimulatePlanId] = useState('');
+  const [simulatedPlayerCount, setSimulatedPlayerCount] = useState(3); // <-- simulatePlayerCount를 simulatedPlayerCount로 변경
   const [simulationCount, setSimulationCount] = useState(1);
-  const [simulatedPlayerCount, setSimulatedPlayerCount] = useState(3);
+  const [maxTurns, setMaxTurns] = useState(10);
   const [simulationResult, setSimulationResult] = useState(null);
   const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [errorSimulation, setErrorSimulation] = useState(null);
 
 
-  // 컨셉 생성 핸들러
+  // 1. 컨셉 생성 핸들러
   const handleGenerateConcept = async (e) => {
     e.preventDefault();
     setLoadingConcept(true);
@@ -61,7 +62,7 @@ function App() {
     setConcept(null);
 
     try {
-      const response = await fetch('http://localhost:8000/generate-concept', {
+      const response = await fetch('http://localhost:8000/generate-concept', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, playerCount, averageWeight: parseFloat(averageWeight) }),
@@ -80,7 +81,7 @@ function App() {
     }
   };
 
-  // 컨셉 재생성 핸들러
+  // 2. 컨셉 재생성 핸들러
   const handleRegenerateConcept = async (e) => {
     e.preventDefault();
     setLoadingRegenerate(true);
@@ -111,7 +112,7 @@ function App() {
     }
   };
 
-  // 게임 목표 생성 핸들러
+  // 3. 게임 목표 생성 핸들러
   const handleGenerateObjective = async (e) => {
     e.preventDefault();
     setLoadingObjective(true);
@@ -138,7 +139,7 @@ function App() {
     }
   };
 
-  // 구성요소 생성 핸들러
+  // 4. 구성요소 생성 핸들러
   const handleGenerateComponents = async (e) => {
     e.preventDefault();
     setLoadingComponents(true);
@@ -156,7 +157,7 @@ function App() {
         throw new Error(errorData.detail || '구성요소 생성에 실패했습니다.');
       }
       const data = await response.json();
-      setComponents(data.components);
+      setComponents(data.components); 
     } catch (err) {
       console.error("구성요소 API 호출 오류:", err);
       setErrorComponents(err.message);
@@ -165,7 +166,7 @@ function App() {
     }
   };
 
-  // 게임 규칙 생성 핸들러
+  // 5. 게임 규칙 생성 핸들러
   const handleGenerateRules = async (e) => {
     e.preventDefault();
     setLoadingRules(true);
@@ -192,7 +193,7 @@ function App() {
     }
   };
 
-  // 게임 규칙 재생성 핸들러
+  // 6. 게임 규칙 재생성 핸들러
   const handleRegenerateRule = async (e) => {
     e.preventDefault();
     setLoadingRegenerateRule(true);
@@ -222,7 +223,7 @@ function App() {
     }
   };
 
-  // 게임 규칙 시뮬레이션 핸들러
+  // 7. 게임 규칙 시뮬레이션 핸들러
   const handleSimulateRules = async (e) => {
     e.preventDefault();
     setLoadingSimulation(true);
@@ -234,10 +235,10 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planId: parseInt(simulatePlanId) || 0, // planId가 선택 사항이므로, 비어있을 경우 0으로 보냅니다.
           ruleId: parseInt(simulateRuleId),
           simulationCount: parseInt(simulationCount),
           playerCount: parseInt(simulatedPlayerCount),
+          maxTurns: parseInt(maxTurns),
         }),
       });
 
@@ -263,9 +264,9 @@ function App() {
         <h1>보드게임 기획 도구</h1>
       </header>
       <main>
-        {/* --- 새로운 컨셉 생성 섹션 --- */}
+        {/* --- 1. 새로운 컨셉 생성 섹션 --- */}
         <section className="feature-section">
-          <h2>새로운 보드게임 컨셉 생성</h2>
+          <h2>1. 새로운 보드게임 컨셉 생성</h2>
           <form onSubmit={handleGenerateConcept} className="concept-form">
             <div className="form-group">
               <label htmlFor="theme">테마:</label>
@@ -302,9 +303,9 @@ function App() {
 
         <hr />
 
-        {/* --- 컨셉 재생성 섹션 --- */}
+        {/* --- 2. 컨셉 재생성 섹션 --- */}
         <section className="feature-section">
-          <h2>기존 컨셉 재생성 (피드백 반영)</h2>
+          <h2>2. 기존 컨셉 재생성 (피드백 반영)</h2>
           <form onSubmit={handleRegenerateConcept} className="regenerate-form">
             <div className="form-group">
               <label htmlFor="regenerateConceptId">원본 컨셉 ID:</label>
@@ -341,9 +342,9 @@ function App() {
 
         <hr />
 
-        {/* --- 게임 목표 생성 섹션 --- */}
+        {/* --- 3. 게임 목표 생성 섹션 --- */}
         <section className="feature-section">
-          <h2>기존 컨셉 기반 게임 목표 생성</h2>
+          <h2>3. 기존 컨셉 기반 게임 목표 생성</h2>
           <form onSubmit={handleGenerateObjective} className="objective-form">
             <div className="form-group">
               <label htmlFor="objectiveConceptId">컨셉 ID:</label>
@@ -367,9 +368,9 @@ function App() {
 
         <hr />
 
-        {/* --- 구성요소 생성 섹션 --- */}
+        {/* --- 4. 구성요소 생성 섹션 --- */}
         <section className="feature-section">
-          <h2>기획안 기반 구성요소 생성</h2>
+          <h2>4. 기획안 기반 구성요소 생성</h2>
           <form onSubmit={handleGenerateComponents} className="components-form">
             <div className="form-group">
               <label htmlFor="componentPlanId">기획안 ID (Plan ID):</label>
@@ -402,9 +403,9 @@ function App() {
 
         <hr />
 
-        {/* --- 게임 규칙 생성 섹션 --- */}
+        {/* --- 5. 게임 규칙 생성 섹션 --- */}
         <section className="feature-section">
-          <h2>컨셉/목표 기반 게임 규칙 생성</h2>
+          <h2>5. 컨셉/목표 기반 게임 규칙 생성</h2>
           <form onSubmit={handleGenerateRules} className="rules-form">
             <div className="form-group">
               <label htmlFor="rulesConceptId">컨셉 ID:</label>
@@ -441,9 +442,9 @@ function App() {
 
         <hr />
 
-        {/* --- 게임 규칙 재생성 섹션 --- */}
+        {/* --- 6. 게임 규칙 재생성 섹션 --- */}
         <section className="feature-section">
-          <h2>게임 규칙 재생성 (피드백 반영)</h2>
+          <h2>6. 게임 규칙 재생성 (피드백 반영)</h2>
           <form onSubmit={handleRegenerateRule} className="regenerate-rule-form">
             <div className="form-group">
               <label htmlFor="regenerateRuleId">규칙 ID:</label>
@@ -484,20 +485,10 @@ function App() {
 
         <hr />
 
-        {/* --- 게임 규칙 시뮬레이션 섹션 --- */}
+        {/* --- 7. 게임 규칙 시뮬레이션 섹션 --- */}
         <section className="feature-section">
-          <h2>게임 규칙 시뮬레이션 (밸런스 테스트)</h2>
+          <h2>7. 게임 규칙 시뮬레이션 (밸런스 테스트)</h2>
           <form onSubmit={handleSimulateRules} className="simulate-rules-form">
-            <div className="form-group">
-              <label htmlFor="simulatePlanId">기획안 ID (참조용):</label>
-              <input
-                type="number"
-                id="simulatePlanId"
-                value={simulatePlanId}
-                onChange={(e) => setSimulatePlanId(e.target.value)}
-                placeholder="예: 2001 (선택사항)"
-              />
-            </div>
             <div className="form-group">
               <label htmlFor="simulateRuleId">규칙 ID:</label>
               <input
@@ -510,26 +501,38 @@ function App() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="simulationCount">시뮬레이션 횟수:</label>
+              <label htmlFor="simulationCount">시뮬레이션 횟수 (1~10):</label>
               <input
                 type="number"
                 id="simulationCount"
                 value={simulationCount}
                 onChange={(e) => setSimulationCount(e.target.value)}
                 min="1"
-                max="50"
+                max="10"
                 required
               />
             </div>
             <div className="form-group">
-              <label htmlFor="simulatedPlayerCount">플레이어 수:</label>
+              <label htmlFor="simulatedPlayerCount">플레이어 수 (2~4):</label>
               <input
                 type="number"
                 id="simulatedPlayerCount"
                 value={simulatedPlayerCount}
                 onChange={(e) => setSimulatedPlayerCount(e.target.value)}
-                min="1"
-                max="6"
+                min="2"
+                max="4"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="maxTurns">게임당 최대 턴 수 (5~20):</label>
+              <input
+                type="number"
+                id="maxTurns"
+                value={maxTurns}
+                onChange={(e) => setMaxTurns(e.target.value)}
+                min="5"
+                max="20"
                 required
               />
             </div>
@@ -565,10 +568,13 @@ function App() {
                 <p>시뮬레이션 결과가 없습니다.</p>
               )}
 
-              {simulationResult.finalBalanceReport && (
+              {simulationResult.balanceAnalysis && (
                 <div className="final-report">
                   <h3>최종 밸런스 분석 보고서:</h3>
-                  <pre>{simulationResult.finalBalanceReport}</pre>
+                  <p><strong>요약:</strong> {simulationResult.balanceAnalysis.simulationSummary}</p>
+                  <p><strong>발견된 문제점:</strong> {simulationResult.balanceAnalysis.issuesDetected.join(', ')}</p>
+                  <p><strong>개선 제안:</strong> {simulationResult.balanceAnalysis.recommendations.join(', ')}</p>
+                  <p><strong>종합 밸런스 점수:</strong> {simulationResult.balanceAnalysis.balanceScore.toFixed(1)} / 10.0</p>
                 </div>
               )}
             </div>
