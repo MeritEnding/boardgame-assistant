@@ -171,7 +171,7 @@ class BoardgameConceptResponse(BaseModel):
     storyline: str
     createdAt: str
 
-@app.post("/generate-concept", response_model=BoardgameConceptResponse)
+@app.post("/api/plans/generate-concept", response_model=BoardgameConceptResponse)
 async def generate_boardgame_concept_api(user_input: BoardgameConceptRequest):
     theme = user_input.theme
     player_count_str = user_input.playerCount
