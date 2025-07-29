@@ -132,52 +132,49 @@ concept_world_objective_database = {
 llm_rules = ChatOpenAI(model_name="gpt-4o", temperature=0.6) # 규칙은 더 명확해야 하므로 temperature를 낮춤
 
 # 게임 규칙 설계를 위한 프롬프트 템플릿
+# 게임 규칙 설계를 위한 프롬프트 템플릿 - 역할, 원칙, 구조를 강화하여 AI 성능 극대화
 game_rules_prompt_template = PromptTemplate(
     input_variables=["theme", "playerCount", "averageWeight", "ideaText", "mechanics",
                      "storyline", "world_setting", "world_tone",
                      "mainGoal", "subGoals", "winConditionType", "objective_designNote"],
-    template="""당신은 보드게임 규칙 전문가입니다.
-    주어진 보드게임의 컨셉, 세계관, 그리고 게임 목표 정보를 바탕으로 구체적이고 명확한 **한국어** 게임 규칙을 설계해주세요.
-    게임의 핵심 플레이 흐름, 행동 규칙, 승리 조건, 그리고 패널티 규칙을 상세하게 제시해야 합니다.
-    제시된 게임 목표와 컨셉, 메커니즘이 잘 연동되도록 규칙을 구상해주세요.
+    template="""
+# Mission: 당신은 복잡한 게임 컨셉을 플레이어가 쉽게 배우고 깊이 즐길 수 있는, 명확하고 완결성 있는 규칙으로 만드는 '리드 룰(Rule) 디자이너'입니다. 당신의 임무는 주어진 게임의 모든 기획 정보를 종합하여, 게임의 준비부터 종료까지 모든 과정을 아우르는 완전한 게임 규칙서를 설계하는 것입니다.
 
-    ---
-    **보드게임 컨셉 및 세계관 정보:**
-    테마: {theme}
-    플레이 인원수: {playerCount}
-    난이도: {averageWeight}
-    핵심 아이디어: {ideaText}
-    주요 메커니즘: {mechanics}
-    기존 스토리라인: {storyline}
-    세계관 설정: {world_setting}
-    세계관 분위기: {world_tone}
+# Key Principles of Rule Design:
+1.  **메커니즘의 구체화 (Mechanics to Actions):** '주요 메커니즘'({mechanics}) 목록을 보고, 각 메커니즘을 플레이어가 수행할 수 있는 구체적인 '행동 규칙(actionRules)'으로 변환해야 합니다. 예를 들어, 메커니즘이 '지역 점령'이라면, '내 유닛을 인접한 빈 지역으로 이동시켜 점령한다'와 같은 행동 규칙을 만들어야 합니다.
+2.  **완결성 있는 구조 (Complete Structure):** 규칙은 단순히 행동의 나열이 아닙니다. 게임 시작을 위한 '준비 단계'는 없지만, 게임의 흐름인 '턴 구조(turnStructure)', 구체적인 '행동 규칙(actionRules)', 그리고 '승리 조건(victoryCondition)'이 명확하게 포함되어야 합니다.
+3.  **명확성과 예외 처리 (Clarity & Edge Cases):** 모든 규칙은 애매함 없이 명확해야 합니다. 또한, 게임 중 발생할 수 있는 부정적인 상황이나 규칙 위반 시 적용될 '페널티 규칙(penaltyRules)'을 반드시 포함하여 규칙의 허점을 보완해야 합니다.
 
-    **보드게임 목표 정보:**
-    주요 목표: {mainGoal}
-    보조 목표: {subGoals}
-    승리 조건 유형: {winConditionType}
-    목표 설계 노트: {objective_designNote}
-    ---
+# Input Data Analysis:
+---
+### 보드게임 종합 정보:
+-   **핵심 컨셉:** {ideaText}
+-   **주요 메커니즘:** {mechanics}
+-   **핵심 목표:** {mainGoal} (승리 조건 유형: {winConditionType})
+-   **세계관 및 스토리:** {storyline}, {world_setting}
+-   **게임 분위기:** {world_tone}
+---
 
-    당신은 다음 JSON 형식으로만 응답해야 합니다. **다른 어떤 설명이나 추가적인 텍스트도 포함하지 마세요.**
-    모든 내용은 **한국어**로 작성되어야 합니다.
-    ruleId는 임의의 고유한 정수 ID로 부여해야 합니다.
+# Final Output Instruction:
+이제, 위의 모든 지침과 원칙을 따라 아래 JSON 형식에 맞춰 최종 결과물만을 생성해주세요.
+**JSON 코드 블록 외에 어떤 인사, 설명, 추가 텍스트도 절대 포함해서는 안 됩니다.**
+모든 내용은 **누가 읽어도 이해하기 쉬운 한국어**로 작성되어야 합니다.
 
-    ```json
-    {{
-      "ruleId": [고유한 정수 ID (예: 2222, 2223 등)],
-      "turnStructure": "[게임의 각 턴이 어떤 단계로 구성되는지 순서대로 설명 (예: 1. 자원 수집 → 2. 행동 선택 → 3. 전투 또는 협상 → 4. 턴 종료 처리)]",
-      "actionRules": [
-        "[플레이어가 턴에 할 수 있는 주요 행동 1에 대한 구체적인 규칙 (한국어)]",
-        "[플레이어가 턴에 할 수 있는 주요 행동 2에 대한 구체적인 규칙 (한국어)]"
-      ],
-      "victoryCondition": "[게임의 최종 승리 조건 및 판정 방식 (게임 목표의 'mainGoal'과 'winConditionType'을 구체적인 규칙으로 변환) (한국어)]",
-      "penaltyRules": [
-        "[플레이어가 특정 상황에서 받게 되는 페널티 1 (한국어)]",
-        "[플레이어가 특정 상황에서 받게 되는 페널티 2 (한국어)]"
-      ],
-      "designNote": "[게임 규칙 설계에 대한 간략한 디자이너 노트 또는 의도 설명 (한국어)]"
-    }}
+```json
+{{
+  "ruleId": [임의의 고유한 정수 ID],
+  "turnStructure": "[한 플레이어의 턴이 어떤 단계(Phase)로 구성되는지 순서대로 설명. 예: 1.자원 수집 -> 2.액션 수행 -> 3.정리]",
+  "actionRules": [
+    "[플레이어가 턴에 할 수 있는 주요 행동 1에 대한 구체적인 규칙. (어떤 자원을 소모하고, 어떤 결과를 얻는지 명확하게 설명)]",
+    "[플레이어가 턴에 할 수 있는 주요 행동 2에 대한 구체적인 규칙. (메커니즘을 구체적인 행동으로 변환)]"
+  ],
+  "victoryCondition": "[게임의 최종 승리 조건을 명확하게 서술. 게임 목표의 'mainGoal'과 'winConditionType'을 구체적인 규칙으로 변환하여, 언제, 어떻게 승리 판정을 하는지 설명]",
+  "penaltyRules": [
+    "[플레이어가 특정 상황에서 받게 되는 페널티 1. (예: 자원 부족, 특정 행동 실패 시)]",
+    "[플레이어가 특정 상황에서 받게 되는 페널티 2. (예: 동맹 배신, 금지된 행동 시도 시)]"
+  ],
+  "designNote": "[이 규칙들이 어떻게 게임의 핵심 재미(예: 전략적 깊이, 플레이어 간 상호작용)를 만들어내는지에 대한 설계 의도 설명]"
+}}
     ```
     """
 )
@@ -274,7 +271,7 @@ class GenerateRulesResponse(BaseModel):
     designNote: str
 
 # API 엔드포인트: 게임 규칙 생성
-@app.post("/generate-rules", response_model=GenerateRulesResponse, summary="컨셉/목표 기반 게임 규칙 생성")
+@app.post("/api/plans/generate-rule", response_model=GenerateRulesResponse, summary="컨셉/목표 기반 게임 규칙 생성")
 async def generate_rules_api(request: GenerateRulesRequest):
     """
     주어진 `conceptId`에 해당하는 보드게임의 컨셉, 세계관, 목표를 바탕으로 게임 규칙을 생성합니다.
