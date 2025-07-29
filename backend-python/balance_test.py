@@ -9,6 +9,7 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 import random
+import sys
 
 # Langgraph 및 관련 라이브러리 임포트 (규칙 시뮬레이션용)
 from typing import Dict, List, Literal, TypedDict
@@ -31,7 +32,7 @@ os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 app = FastAPI(
     title="보드게임 기획 API",
     description="보드게임 컨셉 생성, 재생성, 구성요소 생성, 규칙 생성 및 규칙 재생성, 규칙 시뮬레이션 기능을 제공합니다.",
-    version="1.0.0",
+    version="1.1.0",
 )
 
 # CORS 설정
@@ -45,7 +46,6 @@ app.add_middleware(
 
 # -----------------------------------------------------------------------------
 # 1. 가상의 데이터 저장소 (모든 기획 데이터 통합)
-#    실제 서비스에서는 DB에서 데이터를 조회하는 로직으로 대체됩니다.
 # -----------------------------------------------------------------------------
 # 1-1. 컨셉 데이터 (컨셉 생성/재생성에 사용)
 concept_database_for_regen = {
@@ -385,54 +385,12 @@ game_rules_database = {
 # -----------------------------------------------------------------------------
 # 2. LLM 설정 및 프롬프트 정의 (모든 기능에서 공통 사용)
 # -----------------------------------------------------------------------------
-# 공통 LLM 인스턴스 (필요에 따라 각 기능별로 튜닝된 LLM을 사용할 수도 있음)
 llm_default = ChatOpenAI(model_name="gpt-4o", temperature=0.7)
 
 
 # -----------------------------------------------------------------------------
 # 3. 각 기획 기능별 LLM 체인 및 로직 함수
 # -----------------------------------------------------------------------------
-
-# 3-1. 컨셉 생성 (새로운 컨셉)
-# from langchain_community.vectorstores import FAISS
-# from langchain_openai import OpenAIEmbeddings
-# embeddings = OpenAIEmbeddings()
-# faiss_index_path = "faiss_boardgame_index"
-# # FAISS 벡터스토어 로드/생성 로직은 실제 데이터가 준비된 후에 주석 해제하여 사용
-# # try:
-# #     vectorstore = FAISS.load_local(faiss_index_path, embeddings, allow_dangerous_deserialization=True)
-# # except RuntimeError:
-# #     vectorstore = FAISS.from_texts(["초기 문서"], embeddings) # 임시 초기화
-# #     vectorstore.save_local(faiss_index_path)
-# # retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
-
-# generate_concept_prompt_template = PromptTemplate(
-#     input_variables=["theme", "playerCount", "averageWeight", "retrieved_games"],
-#     template="""당신은 보드게임 컨셉 전문가입니다. ... """
-# )
-# concept_generation_chain = LLMChain(llm=llm_default, prompt=generate_concept_prompt_template)
-
-# class BoardgameConceptRequest(BaseModel):
-#     theme: str = Field(..., example="중세 판타지")
-#     playerCount: str = Field(..., example="2~4명")
-#     averageWeight: float = Field(..., example=2.5, ge=1.0, le=5.0)
-
-# class BoardgameConceptResponse(BaseModel):
-#     conceptId: int
-#     planId: int
-#     theme: str
-#     playerCount: str
-#     averageWeight: float
-#     ideaText: str
-#     mechanics: str
-#     storyline: str
-#     createdAt: str
-
-# @app.post("/generate-concept", response_model=BoardgameConceptResponse, summary="새로운 보드게임 컨셉 생성")
-# async def generate_boardgame_concept_api(user_input: BoardgameConceptRequest):
-#     # ... 컨셉 생성 로직 ...
-#     pass
-
 
 # 3-2. 컨셉 재생성 (기존 컨셉 피드백 반영)
 regenerate_concept_prompt_template = PromptTemplate(
@@ -965,12 +923,12 @@ class GameSimState(TypedDict):
     all_evaluations_log: List[str]
     final_report: str
     next_step: Literal["simulate_turn", "evaluate_single_game", "end_simulation"]
+    player_count_override: int
 
 # --- 그래프 노드 함수 (밸런스 테스트.ipynb에서 가져옴) ---
 def analyze_game_rules(state: GameSimState) -> GameSimState:
     print("🤖 [분석] 게임 규칙 분석 및 정보 추출 중...")
     parser = JsonOutputParser()
-   # main.py 약 980번째 줄
     prompt = ChatPromptTemplate.from_template("""
         당신은 보드게임 규칙 텍스트를 분석하여 JSON 형식으로만 출력하는 시스템입니다.
         주어진 게임 규칙 텍스트를 읽고, 아래 JSON 형식에 맞춰 **모든 정보를 정확히 추출**해주세요.
@@ -1312,20 +1270,16 @@ async def regenerate_rules_api_endpoint(request: RegenerateRulesRequest):
         raise HTTPException(status_code=500, detail=f"서버 오류 발생: {e}")
 
 
-# 4-6. 게임 규칙 시뮬레이션 엔드포인트
+# 4-6. 게임 규칙 시뮬레이션 엔드포인트 (✨ 최종 수정된 부분)
 class SimulateRulesRequest(BaseModel):
-    planId: int = Field(..., example=2001, description="관련 기획안의 ID (참조용)")
     ruleId: int = Field(..., example=3105, description="시뮬레이션할 규칙의 ID")
-    simulationCount: int = Field(..., example=5, description="수행할 시뮬레이션 게임의 수", ge=1, le=50)
-    playerCount: int = Field(..., example=4, description="각 게임의 플레이어 수", ge=1, le=6)
-
-class TurnLogItem(BaseModel):
-    turn: int
-    actions: List[str]
+    simulationCount: int = Field(..., example=3, description="수행할 시뮬레이션 게임의 수", ge=1, le=10)
+    playerCount: int = Field(..., example=2, description="각 게임의 플레이어 수", ge=2, le=4)
+    maxTurns: int = Field(..., example=10, description="게임당 최대 턴 수", ge=5, le=20)
 
 class SimulationResultItem(BaseModel):
     gameId: int
-    turns_log: List[str] # LLM이 생성한 상세 묘사
+    turns_log: List[str]
     winner: str
     totalTurns: int
     durationMinutes: int
@@ -1333,42 +1287,47 @@ class SimulationResultItem(BaseModel):
     keyStrategies: List[str]
     criticalMoments: List[str]
     overallPacing: str
-    balanceEvaluation: str # 단일 게임 밸런스 평가 전체 텍스트
+    balanceEvaluation: str
+
+class BalanceAnalysis(BaseModel):
+    simulationSummary: str = Field(..., description="시뮬레이션 요약")
+    issuesDetected: List[str] = Field(..., description="발견된 문제점 목록")
+    recommendations: List[str] = Field(..., description="개선 제안 목록")
+    balanceScore: float = Field(..., ge=1.0, le=10.0, description="종합 밸런스 점수 (1.0~10.0)")
 
 class SimulateRulesResponse(BaseModel):
     simulationHistory: List[SimulationResultItem]
-    finalBalanceReport: str # 여러 시뮬레이션 종합 분석 보고서
+    balanceAnalysis: BalanceAnalysis
 
-@app.post("/api/simulate/rule-test", response_model=SimulateRulesResponse, summary="게임 규칙 시뮬레이션 실행")
+
+@app.post("/api/simulate/rule-test", response_model=SimulateRulesResponse, summary="게임 규칙 시뮬레이션 및 밸런스 분석 실행")
 async def simulate_rules_api(request: SimulateRulesRequest):
     rule_id_to_simulate = request.ruleId
     simulation_count = request.simulationCount
     player_count = request.playerCount
+    max_turns = request.maxTurns
 
     rule_data = game_rules_database.get(rule_id_to_simulate)
     if not rule_data:
         raise HTTPException(status_code=404, detail=f"Rule ID {rule_id_to_simulate}에 해당하는 규칙 데이터를 찾을 수 없습니다.")
 
-    # main.py 약 1344번째 줄
     game_rules_text_for_sim = rule_data.get("full_rule_text_for_llm")
-    # 변수 이름을 game_rules_text_for_sim으로 수정하고 들여쓰기를 맞춥니다.
     if not game_rules_text_for_sim:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Rule ID {rule_id_to_simulate}에 해당하는 'full_rule_text_for_llm'이 없습니다. 상세 규칙 텍스트를 추가해주세요."
         )
-    
+
     try:
         initial_state = {
             "game_rules_text": game_rules_text_for_sim,
-            "max_turns": 10, # 시뮬레이션할 턴 수 (조정 가능)
+            "max_turns": max_turns,
             "all_evaluations_log": [],
             "player_count_override": player_count
         }
         analyzed_state = analyze_game_rules(initial_state)
         base_state_for_sim = generate_simulation_strategy(analyzed_state)
     except Exception as e:
-        print(f"오류: 초기 게임 분석 또는 전략 수립 중 예외 발생: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"초기 게임 분석 또는 전략 수립 중 오류 발생: {e}")
@@ -1381,10 +1340,11 @@ async def simulate_rules_api(request: SimulateRulesRequest):
         current_game_state_copy = base_state_for_sim.copy()
         current_game_state_copy["all_evaluations_log"] = []
         current_game_state_copy["player_count_override"] = player_count
+        current_game_state_copy["max_turns"] = max_turns
 
-        old_stdout = os.sys.stdout
+        old_stdout = sys.stdout
         redirected_output = io.StringIO()
-        os.sys.stdout = redirected_output
+        sys.stdout = redirected_output
 
         try:
             final_sim_state = simulation_app.invoke(
@@ -1397,7 +1357,7 @@ async def simulate_rules_api(request: SimulateRulesRequest):
             traceback.print_exc()
             final_sim_state = {}
         finally:
-            os.sys.stdout = old_stdout
+            sys.stdout = old_stdout
             simulation_console_log = redirected_output.getvalue()
             print(simulation_console_log)
 
@@ -1419,7 +1379,7 @@ async def simulate_rules_api(request: SimulateRulesRequest):
                 turns_log=final_sim_state.get("turn_log", []),
                 winner=parsed_eval_json.get("winner", "알 수 없음"),
                 totalTurns=parsed_eval_json.get("totalTurns", final_sim_state.get("current_turn", 0)),
-                durationMinutes=parsed_eval_json.get("durationMinutes", random.randint(10, 60)),
+                durationMinutes=parsed_eval_json.get("durationMinutes", random.randint(30, 90)),
                 score=parsed_eval_json.get("score", {}),
                 keyStrategies=parsed_eval_json.get("keyStrategies", []),
                 criticalMoments=parsed_eval_json.get("criticalMoments", []),
@@ -1428,7 +1388,6 @@ async def simulate_rules_api(request: SimulateRulesRequest):
             )
             all_simulation_results.append(sim_result)
         else:
-            print(f"경고: {i+1}번째 시뮬레이션 결과 또는 평가가 불완전합니다. Raw Eval: {final_sim_state.get('single_game_evaluation')}")
             all_simulation_results.append(SimulationResultItem(
                 gameId=i + 1, turns_log=["시뮬레이션 실패 또는 불완전"], winner="N/A",
                 totalTurns=0, durationMinutes=0, score={}, keyStrategies=[], criticalMoments=[],
@@ -1460,16 +1419,44 @@ async def simulate_rules_api(request: SimulateRulesRequest):
     """)
     final_report_chain = final_report_prompt | llm_default
     try:
-        final_balance_report = final_report_chain.invoke({
+        final_balance_report_text = final_report_chain.invoke({
             "summary": base_state_for_sim.get("game_summary", ""),
             "eval_logs": "\n\n---\n\n".join(all_eval_logs)
         }).content
-        final_balance_report = final_balance_report.replace("**", "").replace("##", "").replace("###", "")
     except Exception as e:
         print(f"최종 보고서 생성 중 오류 발생: {e}")
-        final_balance_report = f"최종 밸런스 보고서 생성에 실패했습니다: {e}"
+        final_balance_report_text = f"최종 밸런스 보고서 생성에 실패했습니다: {e}"
+
+    parser = JsonOutputParser(pydantic_object=BalanceAnalysis)
+    parsing_prompt = ChatPromptTemplate.from_template(
+        template="""
+        당신은 분석 보고서 텍스트를 JSON 형식으로 변환하는 전문가입니다.
+        아래 주어진 최종 밸런스 보고서 텍스트를 읽고, 요청된 JSON 형식에 맞춰 내용을 추출하고 요약해주세요.
+        'balanceScore'는 보고서의 전반적인 긍정/부정 뉘앙스를 분석하여 1.0(매우 나쁨)에서 10.0(완벽함) 사이의 점수로 변환해주세요.
+        
+        {format_instructions}
+        
+        ---
+        [분석 보고서 텍스트]
+        {report_text}
+        ---
+        """,
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
+    parsing_chain = parsing_prompt | llm_default | parser
+
+    try:
+        parsed_balance_analysis = parsing_chain.invoke({"report_text": final_balance_report_text})
+    except Exception as e:
+        print(f"최종 보고서 파싱 실패: {e}")
+        parsed_balance_analysis = BalanceAnalysis(
+            simulationSummary="분석 보고서 요약에 실패했습니다.",
+            issuesDetected=["보고서 분석 중 오류 발생"],
+            recommendations=["LLM의 텍스트 출력을 확인해주세요."],
+            balanceScore=5.0
+        )
 
     return SimulateRulesResponse(
         simulationHistory=all_simulation_results,
-        finalBalanceReport=final_balance_report
+        balanceAnalysis=parsed_balance_analysis
     )
