@@ -156,51 +156,46 @@ llm_components = ChatOpenAI(model_name="gpt-4o", temperature=0.7) # 구체적인
 # 구성요소 생성을 위한 프롬프트 템플릿
 component_generation_prompt_template = PromptTemplate(
     input_variables=["theme", "playerCount", "averageWeight", "ideaText", "mechanics", "storyline", "mainGoal", "winConditionType", "world_setting", "world_tone"],
-    template="""당신은 보드게임의 구성요소(컴포넌트) 디자이너입니다.
-    주어진 보드게임 컨셉, 목표 및 세계관 정보를 바탕으로,
-    게임 플레이에 필수적이고 테마에 잘 어울리는 **한국어** 구성요소를 5개 이상 제안해주세요.
-    각 구성요소는 다음 속성을 포함하는 JSON 객체여야 합니다.
+    template="""
+    # Mission: 당신은 추상적인 게임 컨셉을 만질 수 있는 '제품'으로 구현하는 '리드 컴포넌트 전략가'입니다. 당신의 임무는 주어진 게임의 모든 정보(컨셉, 세계관, 목표)를 종합적으로 분석하여, 게임 플레이를 가능하게 하고 플레이어의 몰입감을 극대화하는 핵심 구성요소(컴포넌트) 목록을 설계하는 것입니다.
 
+    # Component Design Philosophy:
+    1.  **기능성 (Functionality):** 모든 구성요소는 반드시 게임의 핵심 메커니즘이나 목표 달성과 직접적으로 연결되어야 합니다. "왜 이 컴포넌트가 꼭 필요한가?"라는 질문에 답할 수 있어야 합니다.
+    2.  **테마성 (Thematic Resonance):** 구성요소의 이름과 역할(effect)은 게임의 세계관과 스토리에 깊이 몰입하게 만드는 장치입니다. '자원 토큰' 대신 '에테르 조각'처럼 테마에 맞는 이름을 부여하세요.
+    3.  **직관성 (Intuitive UX):** 플레이어가 구성요소를 보고 그 역할과 사용법을 쉽게 이해할 수 있어야 합니다. 'effect' 설명 시, 플레이어의 행동 관점에서 구체적으로 서술해주세요.
+
+    # Input Data Analysis:
     ---
-    **보드게임 컨셉 정보:**
-    테마: {theme}
-    플레이 인원수: {playerCount}
-    난이도: {averageWeight}
-    핵심 아이디어: {ideaText}
-    주요 메커니즘: {mechanics}
-    스토리라인: {storyline}
-
-    **게임 목표 정보:**
-    주요 목표: {mainGoal}
-    승리 조건 유형: {winConditionType}
-
-    **세계관 정보:**
-    세계관 설정: {world_setting}
-    세계관 분위기: {world_tone}
+    **보드게임 종합 정보:**
+    -   컨셉: {ideaText}
+    -   메커니즘: {mechanics}
+    -   주요 목표: {mainGoal}
+    -   승리 조건: {winConditionType}
+    -   세계관: {world_setting}, {storyline}
+    -   전체적인 톤: {world_tone}
     ---
 
-    당신은 다음 JSON 형식으로만 응답해야 합니다. **다른 어떤 설명이나 추가적인 텍스트도 포함하지 마세요.**
-    모든 내용은 **한국어**로 작성되어야 합니다.
-    'effect'는 게임 내에서 해당 구성요소가 어떤 역할을 하는지 구체적으로 설명해주세요.
-    'visualType'은 '2D' (카드, 보드, 타일 등) 또는 '3D' (미니어처, 토큰, 주사위 등) 중 하나로 선택해주세요.
+    # Final Output Instruction:
+    이제, 위의 모든 지침과 철학을 따라 아래 JSON 형식에 맞춰 최종 결과물만을 생성해주세요.
+    최소 5개 이상의 '핵심' 구성요소를 제안하되, 게임에 필요한 다양한 종류(보드, 카드, 토큰 등)를 균형 있게 포함해주세요.
+    **JSON 코드 블록 외에 어떤 인사, 설명, 추가 텍스트도 절대 포함해서는 안 됩니다.**
 
     ```json
     {{
-      "components": [
+    "components": [
         {{
-          "type": "[구성요소 유형 (예: 카드, 토큰, 보드, 주사위, 미니어처, 타일 등)]",
-          "name": "[구성요소 이름 (한국어)]",
-          "effect": "[게임 내에서 구성요소의 역할/효과 (한국어)]",
-          "visualType": "[2D 또는 3D]"
+        "type": "[구성요소의 종류 (예: 게임 보드, 캐릭터 시트, 이벤트 카드, 자원 토큰, 목표 타일, 주사위 등)]",
+        "name": "[세계관에 몰입감을 더하는 고유한 이름 (한국어)]",
+        "effect": "[이 구성요소의 '게임플레이 기능'을 설명. 플레이어는 이걸로 무엇을 할 수 있고, 게임 목표 달성에 어떤 영향을 미치는지 구체적으로 서술 (한국어)]",
+        "visualType": "[시각적 형태 (2D 또는 3D)]"
         }},
         {{
-          "type": "토큰",
-          "name": "시간 조각 토큰",
-          "effect": "점수 계산에 사용됩니다. (예시)",
-          "visualType": "3D"
-        }},
-        // 최소 5개 이상 다양한 구성요소 제안
-      ]
+        "type": "예시 타입",
+        "name": "예시 이름",
+        "effect": "예시 효과 설명",
+        "visualType": "2D"
+        }}
+    ]
     }}
     ```
     """
@@ -250,9 +245,11 @@ def generate_game_components_logic(plan_id: int) -> dict:
             json_str = json_match.group(1)
             components_data = json.loads(json_str)
             # LLM이 직접 "components" 리스트를 생성하도록 유도했으므로, 그대로 반환
-            if "components" not in components_data or not isinstance(components_data["components"], list):
-                raise ValueError("LLM 응답에 'components' 리스트가 포함되어 있지 않거나 형식이 올바르지 않습니다.")
-            return components_data
+            final_response = {
+                "componentId": np.random.randint(3000, 9999), # 3000~9999 사이의 랜덤 ID 생성
+                "components": components_data["components"]
+            }
+            return final_response
         else:
             raise ValueError("LLM 응답에서 유효한 JSON 블록을 찾을 수 없습니다.")
 
@@ -286,10 +283,11 @@ class ComponentItem(BaseModel):
     visualType: str # "2D" 또는 "3D"
 
 class GenerateComponentsResponse(BaseModel):
+    componentId: int
     components: List[ComponentItem]
 
 # API 엔드포인트: 구성요소 생성
-@app.post("/generate-components", response_model=GenerateComponentsResponse, summary="컨셉/목표 기반 구성요소 생성")
+@app.post("/api/plans/generate-components", response_model=GenerateComponentsResponse, summary="컨셉/목표 기반 구성요소 생성")
 async def generate_components_api(request: GenerateComponentsRequest):
     """
     주어진 `planId`에 해당하는 보드게임의 컨셉과 목표를 바탕으로 게임 구성요소를 생성합니다.
