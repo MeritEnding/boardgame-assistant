@@ -237,7 +237,7 @@ class GameObjectiveResponse(BaseModel):
     designNote: str = Field(..., description="게임 목표 설계에 대한 간략한 디자이너 노트 또는 의도 설명")
 
 # API 엔드포인트 정의
-@app.post("/generate-objective", response_model=GameObjectiveResponse, summary="게임 목표 생성")
+@app.post("/api/plans/generate-goal", response_model=GameObjectiveResponse, summary="게임 목표 생성")
 async def generate_objective_api(request: GameObjectiveRequest):
     """
     주어진 `conceptId`에 해당하는 보드게임 컨셉과 세계관을 바탕으로 구체적인 게임 목표를 생성합니다.
