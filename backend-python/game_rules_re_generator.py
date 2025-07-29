@@ -43,35 +43,36 @@ app.add_middleware(
 # 이 데이터베이스는 규칙 재생성 기능에서만 사용됩니다.
 # 요청하신 ruleId: 23에 대한 예시 데이터를 추가합니다.
 game_rules_database = {
-    2222: { # 기존 규칙 생성 예시에서 나온 규칙 ID (만약 규칙이 DB에 저장된다면)
-        "ruleId": 2222,
-        "turnStructure": "1. 자원 수집 → 2. 행동 선택 → 3. 전투 또는 협상 → 4. 턴 종료 처리",
-        "actionRules": [
-            "자원 수집 시 무작위 카드 2장과 1 토큰 획득",
-            "상대 진영과 협상 시 거래 조건을 비공개로 제안 가능",
-            "전투 시 주사위로 결과 결정, 추가 카드 사용 가능"
-        ],
-        "victoryCondition": "유물을 3개 먼저 수집하면 즉시 승리",
-        "penaltyRules": [
-            "자원이 0일 때 행동 제한 발생",
-            "동맹을 배신할 경우 다음 2턴간 협상 불가"
-        ],
-        "designNote": "게임 흐름이 직관적이면서도, 협상과 배신이 자연스럽게 녹아들도록 구조화함"
-    },
-    23: { # 요청하신 ruleId 23에 대한 예시 데이터
-        "ruleId": 23,
-        "turnStructure": "1. 플레이어 턴 시작 → 2. 이동 → 3. 행동 (자원 수집 또는 카드 사용) → 4. 턴 종료",
-        "actionRules": [
-            "이동: 자신의 미니어처를 인접한 공간으로 1칸 이동",
-            "자원 수집: 현재 위치의 자원 타일에서 자원 토큰 1개 획득",
-            "카드 사용: 손에서 카드 1장을 내어 효과 발동 (예: 추가 이동, 적 공격)"
-        ],
-        "victoryCondition": "맵 중앙에 위치한 보스 몬스터를 처치하면 승리",
-        "penaltyRules": [
-            "체력 0이 되면 모든 자원 상실 및 1턴 쉬기",
-            "특정 이벤트 카드 발동 시 강제 이동"
-        ],
-        "designNote": "간단하고 빠른 턴 진행을 목표로 함"
+    23: {
+        "conceptId": 12, # 이 규칙이 conceptId 12와 연결되어 있음을 명시
+        "rule": {
+            "ruleId": 23,
+            "turnStructure": "1. 플레이어 턴 시작 → 2. 이동 → 3. 행동 (자원 수집 또는 카드 사용) → 4. 턴 종료",
+            "actionRules": [
+                "이동: 자신의 미니어처를 인접한 공간으로 1칸 이동",
+                "자원 수집: 현재 위치의 자원 타일에서 자원 토큰 1개 획득",
+                "카드 사용: 손에서 카드 1장을 내어 효과 발동 (예: 추가 이동, 적 공격)"
+            ],
+            "victoryCondition": "맵 중앙에 위치한 보스 몬스터를 처치하면 승리",
+            "penaltyRules": ["체력 0이 되면 모든 자원 상실 및 1턴 쉬기"],
+            "designNote": "간단하고 빠른 턴 진행을 목표로 함"
+        }
+    }
+}
+
+# 게임 컨셉/세계관/목표 데이터 (이전과 동일, 컨텍스트 제공용)
+concept_world_objective_database = {
+    12: {
+        "concept": {
+            "theme": "SF 생존/전략",
+            "mechanics": "자원 관리, 기지 건설, 타워 디펜스, 비대칭 능력, 협력/경쟁"
+        },
+        "world": {
+            "storyline": "인류의 마지막 희망을 싣고 떠난 우주선 '아크론'은 미지의 행성 '제노스-7' 상공에서 파괴되었다."
+        },
+        "objective": {
+            "mainGoal": "비상 신호 장치의 핵심 부품 3개를 모두 수리하여 구조 신호를 성공적으로 송신하면 승리합니다."
+        }
     }
 }
 
@@ -80,53 +81,63 @@ game_rules_database = {
 # 2. LLM 설정 및 프롬프트 정의 (게임 규칙 재생성)
 # -----------------------------------------------------------------------------
 
-llm_regenerate_rules = ChatOpenAI(model_name="gpt-4o", temperature=0.7) # 규칙 재생성은 창의성과 명확성 균형
+llm_regenerate_rules = ChatOpenAI(model_name="gpt-4o", temperature=0.7)
 
-# 게임 규칙 재생성을 위한 프롬프트 템플릿
+# 게임 규칙 재생성을 위한 고도화된 프롬프트 템플릿
 regenerate_rules_prompt_template = PromptTemplate(
-    input_variables=["original_rule_json", "feedback", "rule_id"],
-    template="""당신은 보드게임 규칙 전문가입니다.
-    주어진 기존 보드게임 규칙에 대한 사용자 피드백을 바탕으로,
-    **기존 규칙을 수정하거나 완전히 새로운 규칙을 한국어로 생성**해주세요.
-    특히 피드백의 내용을 적극적으로 반영해야 합니다.
+    input_variables=["game_context", "original_rule_json", "feedback", "rule_id"],
+    template="""
+    # Mission: 당신은 플레이어의 피드백을 반영하여 게임의 깊이를 더하는 '리드 게임 밸런서'입니다. 당신의 임무는 기존 규칙의 문제점을 진단하고, 게임의 핵심 컨셉과 메커니즘을 바탕으로 규칙을 개선하여 더 풍부한 전략적 경험을 제공하는 것입니다.
 
-    재생성된 규칙은 다음 형식으로 제공되어야 하며, ruleId는 기존의 ruleId를 그대로 사용합니다.
+    # Refinement Process:
+    1.  **피드백 해석 (Interpret Feedback):** 사용자의 피드백 '{feedback}'의 근본적인 원인을 파악합니다. '행동이 단순하다'는 것은 '의미 있는 선택지가 부족하다'는 의미입니다.
+    2.  **컨셉 연계 (Link to Concept):** 주어진 '게임 컨텍스트'의 핵심 메커니즘을 어떻게 더 잘 활용하여 피드백을 해결할지 고민합니다. 예를 들어, '자원 관리' 메커니즘이 있다면, 자원을 특별하게 소모하여 강력한 행동을 하는 규칙을 추가할 수 있습니다.
+    3.  **규칙 재설계 (Redesign Rules):** 위의 분석을 바탕으로 'actionRules'를 중심으로 규칙을 재설계합니다. 기존 규칙을 개선하거나, 새로운 전략적 행동을 추가하여 더 다양한 플레이 스타일이 가능하도록 만듭니다.
 
+    # Input Data:
     ---
-    **기존 보드게임 규칙 정보:**
+    ### 1. Game Context (For a Deeper Understanding):
+    {game_context}
+
+    ### 2. Original Rules (To be Improved):
     ```json
     {original_rule_json}
-    ```
+        ```
 
-    **사용자 피드백:**
+    ### 3. User Feedback to Reflect:
     {feedback}
 
     **기존 규칙 ID (재생성된 규칙에 동일하게 적용):**
     {rule_id}
     ---
 
+
+    Final Output Instruction:
+    이제, 위의 모든 지침과 과정을 따라 아래 JSON 형식에 맞춰 '재생성된 전체 규칙'만을 생성해주세요.
+    JSON 코드 블록 외에 어떤 인사, 설명, 추가 텍스트도 절대 포함해서는 안 됩니다.
     당신은 다음 JSON 형식으로만 응답해야 합니다. **다른 어떤 설명이나 추가적인 텍스트도 포함하지 마세요.**
     모든 내용은 **한국어**로 작성되어야 합니다.
 
     ```json
     {{
-      "ruleId": {rule_id},
-      "turnStructure": "[게임의 각 턴이 어떤 단계로 구성되는지 순서대로 설명 (예: 1. 자원 수집 → 2. 행동 선택 → 3. 전투 또는 협상 → 4. 턴 종료 처리)]",
-      "actionRules": [
-        "[플레이어가 턴에 할 수 있는 주요 행동 1에 대한 구체적인 규칙 (한국어)]",
-        "[플레이어가 턴에 할 수 있는 주요 행동 2에 대한 구체적인 규칙 (한국어)]"
-      ],
-      "victoryCondition": "[게임의 최종 승리 조건 및 판정 방식 (한국어)]",
-      "penaltyRules": [
-        "[플레이어가 특정 상황에서 받게 되는 페널티 1 (한국어)]",
-        "[플레이어가 특정 상황에서 받게 되는 페널티 2 (한국어)]"
-      ],
-      "designNote": "[게임 규칙 설계에 대한 간략한 디자이너 노트 또는 의도 설명 (한국어)]"
+    "ruleId": {rule_id},
+    "turnStructure": "[개선된 게임 흐름에 맞는 새로운 턴 구조. 더 역동적으로 변경될 수 있음]",
+    "actionRules": [
+        "[피드백을 반영하여 더 다양하고 전략적인 선택지를 제공하는 행동 규칙 1]",
+        "[새롭게 추가되거나 흥미롭게 변경된 행동 규칙 2]"
+    ],
+    "victoryCondition": "[기존 승리 조건을 유지하되, 더 명확하게 서술]",
+    "penaltyRules": [
+        "[게임의 복잡도에 맞게 수정되거나 추가된 페널티 규칙]"
+    ],
+    "designNote": "[피드백을 어떻게 반영했고, 새로운 규칙이 어떻게 게임의 전략적 깊이를 더하는지에 대한 구체적인 설명]"
     }}
     ```
     """
 )
 regenerate_rules_chain = LLMChain(llm=llm_regenerate_rules, prompt=regenerate_rules_prompt_template)
+
+
 
 # -----------------------------------------------------------------------------
 # 3. 게임 규칙 재생성 함수
@@ -135,14 +146,31 @@ def regenerate_game_rules_logic(request_data: dict) -> dict:
     rule_id_to_regenerate = request_data.get("ruleId")
     feedback = request_data.get("feedback", "")
 
-    original_rule_data = game_rules_database.get(rule_id_to_regenerate)
-    if not original_rule_data:
+    # 1. 원본 규칙 및 연관 컨셉 ID 조회
+    original_rule_entry = game_rules_database.get(rule_id_to_regenerate)
+    if not original_rule_entry:
         raise HTTPException(status_code=404, detail=f"Rule ID {rule_id_to_regenerate}에 해당하는 원본 규칙 데이터를 찾을 수 없습니다.")
+    
+    original_rule_data = original_rule_entry.get("rule")
+    concept_id = original_rule_entry.get("conceptId")
 
+    # 2. 연관된 게임 컨셉/목표 정보 조회 (중요!)
+    game_context = concept_world_objective_database.get(concept_id)
+    if not game_context:
+        raise HTTPException(status_code=404, detail=f"연관된 Concept ID {concept_id}의 게임 정보를 찾을 수 없습니다.")
+
+    # 3. LLM에 전달할 정보 가공
+    game_context_summary = f"""
+    - 테마: {game_context.get("concept", {}).get("theme", "N/A")}
+    - 핵심 메커니즘: {game_context.get("concept", {}).get("mechanics", "N/A")}
+    - 최종 목표: {game_context.get("objective", {}).get("mainGoal", "N/A")}
+    """
     original_rule_json_str = json.dumps(original_rule_data, indent=2, ensure_ascii=False)
 
+    # 4. LLM Chain 호출
     try:
         response = regenerate_rules_chain.invoke({
+            "game_context": game_context_summary.strip(),
             "original_rule_json": original_rule_json_str,
             "feedback": feedback,
             "rule_id": rule_id_to_regenerate
@@ -150,33 +178,24 @@ def regenerate_game_rules_logic(request_data: dict) -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM 체인 실행 중 오류 발생: {e}")
 
+    # 5. LLM 응답 파싱 및 DB 업데이트
     try:
         json_match = re.search(r"```json\s*(\{.*?\})\s*```", response['text'], re.DOTALL)
-        if json_match:
-            json_str = json_match.group(1)
-            regenerated_rules = json.loads(json_str)
-
-            # ruleId는 기존 것을 유지 (LLM이 잘못 생성해도 고정)
-            regenerated_rules["ruleId"] = rule_id_to_regenerate
-            
-            return regenerated_rules
-        else:
+        if not json_match:
             raise ValueError("LLM 응답에서 유효한 JSON 블록을 찾을 수 없습니다.")
 
-    except json.JSONDecodeError as e:
-        print(f"JSON 파싱 오류: {e}")
-        print(f"LLM 응답 텍스트: {response['text']}")
-        raise HTTPException(status_code=500, detail=f"LLM 응답을 JSON 형식으로 파싱할 수 없습니다: {e}. 원본 응답: {response['text']}")
-    except ValueError as e:
-        print(f"값 오류: {e}")
-        print(f"LLM 응답 텍스트: {response['text']}")
-        raise HTTPException(status_code=500, detail=str(e))
-    except KeyError as e:
-        print(f"필수 키가 LLM 응답에 없습니다: {e}")
-        print(f"LLM 응답 텍스트: {response['text']}")
-        raise HTTPException(status_code=500, detail=f"필수 키 '{e}'가 LLM 응답에 없습니다.")
+        json_str = json_match.group(1)
+        regenerated_rules = json.loads(json_str)
+        regenerated_rules["ruleId"] = rule_id_to_regenerate # ID는 기존 값으로 고정
 
-
+        # 메모리 내 DB 업데이트
+        game_rules_database[rule_id_to_regenerate]["rule"] = regenerated_rules
+        print(f"Rule ID {rule_id_to_regenerate}가 새로운 규칙으로 업데이트되었습니다.")
+        
+        return regenerated_rules
+    except (json.JSONDecodeError, ValueError) as e:
+        # ... (기존 에러 처리 로직)
+        raise HTTPException(status_code=500, detail=f"LLM 응답 파싱 오류: {e}")
 # -----------------------------------------------------------------------------
 # 4. FastAPI 엔드포인트 정의 (게임 규칙 재생성)
 # -----------------------------------------------------------------------------
