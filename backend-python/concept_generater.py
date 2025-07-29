@@ -110,37 +110,42 @@ llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.7) # gpt-4o 또는 gp
 # 컨셉 생성을 위한 프롬프트 템플릿 - 한국어 지시 및 JSON 파싱 강화
 prompt_template = PromptTemplate(
     input_variables=["theme", "playerCount", "averageWeight", "retrieved_games"],
-    template="""당신은 보드게임 컨셉 전문가입니다.
-    다음 정보를 바탕으로 독창적이고 흥미로운 **한국어** 보드게임 컨셉을 생성해주세요.
-    특히 테마, 플레이어 수, 난이도를 고려하여 관련성 높은 컨셉을 만들어야 합니다.
-    **생성하는 'ideaText', 'mechanics', 'storyline'의 내용은 반드시 한국어로 작성해주세요.**
+    template="""# Mission: 당신은 세계적인 명성을 가진 보드게임 기획자이자, 독창적인 아이디어를 구체적인 컨셉으로 만드는 데 특화된 비저너리(Visionary)입니다. 당신의 임무는 사용자의 요청과 유사 게임 데이터를 깊이 분석하여, 세상에 없던 새로운 재미를 선사할 혁신적인 보드게임 컨셉을 창조하는 것입니다.
 
-    참고할만한 기존 보드게임 정보는 다음과 같습니다:
-    ---
-    {retrieved_games}
-    ---
+# Guiding Principles for a Successful Concept:
+1. **독창성 (Originality):** 제시된 참고 데이터를 영감의 원천으로만 삼으세요. 아이디어나 메커니즘을 그대로 가져오지 말고, 완전히 새로운 경험을 제안해야 합니다. 여러 메커니즘을 창의적으로 융합하거나 기존에 없던 새로운 규칙을 고안하세요.
+2. **일관성 (Coherence):** 게임의 테마, 스토리, 메커니즘이 유기적으로 연결되어야 합니다. 모든 요소가 하나의 목표를 향해 조화를 이루도록 설계해주세요. 왜 이 테마에 이 메커니즘이 어울리는지 명확히 드러나야 합니다.
+3. **구체성 (Specificity):** 'ideaText', 'mechanics', 'storyline'은 누구나 게임의 그림을 그릴 수 있도록 구체적이고 생생하게 묘사해야 합니다. 추상적인 표현(예: "재미있는 상호작용") 대신 구체적인 액션(예: "상대방의 자원을 빼앗는 '약탈' 카드 사용")을 설명해주세요.
+4. **언어 (Language):** 모든 핵심 설명('ideaText', 'mechanics', 'storyline')은 반드시 풍부하고 자연스러운 **한국어**로 작성되어야 합니다.
 
-    사용자 요청 정보:
-    테마: {theme}
-    플레이 인원수: {playerCount}
-    난이도 (1.0~5.0): {averageWeight}
+# Input Data Analysis:
+### 1. User Request:
+- 테마: {theme}
+- 플레이 인원수: {playerCount}
+- 난이도 (1.0~5.0): {averageWeight}
 
-    당신은 다음 JSON 형식으로만 응답해야 합니다. **다른 어떤 설명이나 추가적인 텍스트도 포함하지 마세요.**
-    반드시 'conceptId'와 'planId'는 고유한 숫자로, 'createdAt'은 현재 ISO 8601 형식 시간으로 생성하고,
-    'ideaText', 'mechanics', 'storyline'은 구체적이고 매력적으로 작성해주세요.
+### 2. Reference Data for Inspiration:
+(이 게임들은 아이디어를 얻기 위한 참고 자료일 뿐, 절대 복사해서는 안 됩니다.)
+---
+{retrieved_games}
+---
 
-    ```json
-    {{
-      "conceptId": [고유한 숫자],
-      "planId": [고유한 숫자],
-      "theme": "{theme}",
-      "playerCount": "{playerCount}",
-      "averageWeight": {averageWeight},
-      "ideaText": "[새로운 보드게임의 핵심 플레이 아이디어 설명 (한국어)]",
-      "mechanics": "[새로운 보드게임의 주요 메커니즘 목록 (예: 지역 점령, 카드 드래프트) (한국어)]",
-      "storyline": "[새로운 보드게임의 배경 스토리 설명 (한국어)]",
-      "createdAt": "[현재 ISO 8601 형식 시간]"
-    }}
+# Final Output Instruction:
+이제, 위의 모든 지침과 원칙을 따라 아래 JSON 형식에 맞춰 최종 결과물만을 생성해주세요.
+**JSON 코드 블록 외에 어떤 인사, 설명, 추가 텍스트도 절대 포함해서는 안 됩니다.**
+
+```json
+{{
+  "conceptId": [고유한 숫자],
+  "planId": [고유한 숫자],
+  "theme": "{theme}",
+  "playerCount": "{playerCount}",
+  "averageWeight": {averageWeight},
+  "ideaText": "[새로운 보드게임의 핵심 플레이 경험과 승리 조건을 구체적으로 설명 (한국어)]",
+  "mechanics": "[게임의 핵심 메커니즘들을 나열하고, 각 메커니즘이 테마와 어떻게 연결되는지 간략히 설명 (한국어)]",
+  "storyline": "[플레이어들이 몰입할 수 있는 매력적인 배경 세계관과 그 속에서 플레이어의 역할을 설명 (한국어)]",
+  "createdAt": "[현재 ISO 8601 형식 시간]"
+}}
     ```
     """
 )
