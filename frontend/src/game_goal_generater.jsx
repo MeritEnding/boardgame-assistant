@@ -1,198 +1,124 @@
 import React, { useState } from 'react';
-import './App.css'; // 기본 CSS 파일 사용
+
+// --- 스타일링을 위한 Tailwind CSS 클래스 ---
+// 이 코드는 create-react-app과 Tailwind CSS가 설정된 환경에서 작동합니다.
+// 설정 방법: https://tailwindcss.com/docs/guides/create-react-app
+
+const cardContainerStyle = "bg-white shadow-2xl rounded-2xl p-8 max-w-2xl w-full mx-auto my-10 transition-all duration-300 ease-in-out";
+const inputStyle = "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow";
+const buttonStyle = "w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed";
+const resultSectionStyle = "mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200 animate-fade-in";
+const resultTitleStyle = "text-lg font-bold text-gray-800 mb-2";
+const resultTextStyle = "text-gray-600 leading-relaxed";
+const subGoalListStyle = "list-disc list-inside pl-4 mt-2";
+
+// --- 컴포넌트 ---
 
 function App() {
-  // 기존 컨셉 생성 상태
-  const [theme, setTheme] = useState('');
-  const [playerCount, setPlayerCount] = useState('');
-  const [averageWeight, setAverageWeight] = useState(2.0);
-  const [concept, setConcept] = useState(null);
-  const [loadingConcept, setLoadingConcept] = useState(false);
-  const [errorConcept, setErrorConcept] = useState(null);
+    const [conceptId, setConceptId] = useState('');
+    const [gameObjective, setGameObjective] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-  // 게임 목표 생성 상태
-  const [objectiveConceptId, setObjectiveConceptId] = useState('');
-  const [objective, setObjective] = useState(null);
-  const [loadingObjective, setLoadingObjective] = useState(false);
-  const [errorObjective, setErrorObjective] = useState(null);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!conceptId) {
+            setError('컨셉 ID를 입력해주세요.');
+            return;
+        }
 
-  // 컨셉 생성 핸들러
-  const handleGenerateConcept = async (e) => {
-    e.preventDefault();
-    setLoadingConcept(true);
-    setErrorConcept(null);
-    setConcept(null); // 이전 결과 초기화
+        setLoading(true);
+        setError('');
+        setGameObjective(null);
 
-    try {
-      const response = await fetch('http://localhost:8000/generate-concept', { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          theme,
-          playerCount,
-          averageWeight: parseFloat(averageWeight),
-        }),
-      });
+        try {
+            // Spring Boot 백엔드 API 엔드포인트 호출
+            const response = await fetch('http://localhost:8080/api/v1/games/generate-goal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ conceptId: parseInt(conceptId, 10) }),
+            });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '컨셉 생성에 실패했습니다.');
-      }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP Error: ${response.status}`);
+            }
 
-      const data = await response.json();
-      setConcept(data);
-    } catch (err) {
-      console.error("API 호출 오류:", err);
-      setErrorConcept(err.message);
-    } finally {
-      setLoadingConcept(false);
-    }
-  };
+            const data = await response.json();
+            setGameObjective(data);
 
-  // 게임 목표 생성 핸들러
-  const handleGenerateObjective = async (e) => {
-    e.preventDefault();
-    setLoadingObjective(true);
-    setErrorObjective(null);
-    setObjective(null); // 이전 결과 초기화
+        } catch (err) {
+            setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    try {
-      const response = await fetch('http://localhost:8000/generate-objective', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          conceptId: parseInt(objectiveConceptId), // 정수로 변환
-        }),
-      });
+    return (
+        <div className="bg-gray-100 min-h-screen flex items-center justify-center font-sans p-4">
+            <div className={cardContainerStyle}>
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl font-extrabold text-gray-900">보드게임 목표 생성기</h1>
+                    <p className="text-gray-500 mt-2">컨셉 ID를 입력하여 AI가 생성하는 게임 목표를 확인하세요.</p>
+                </div>
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '게임 목표 생성에 실패했습니다.');
-      }
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label htmlFor="conceptId" className="block text-sm font-medium text-gray-700 mb-2">
+                            컨셉 ID (e.g., 1001, 1002, 12)
+                        </label>
+                        <input
+                            id="conceptId"
+                            type="number"
+                            value={conceptId}
+                            onChange={(e) => setConceptId(e.target.value)}
+                            placeholder="컨셉 ID를 입력하세요..."
+                            className={inputStyle}
+                        />
+                    </div>
+                    <button type="submit" disabled={loading} className={buttonStyle}>
+                        {loading ? '생성 중...' : '게임 목표 생성'}
+                    </button>
+                </form>
 
-      const data = await response.json();
-      setObjective(data);
-    } catch (err) {
-      console.error("API 호출 오류:", err);
-      setErrorObjective(err.message);
-    } finally {
-      setLoadingObjective(false);
-    }
-  };
+                {error && (
+                    <div className="mt-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg animate-fade-in">
+                        <strong>오류:</strong> {error}
+                    </div>
+                )}
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>보드게임 기획 도구</h1>
-      </header>
-      <main>
-        {/* --- 새로운 컨셉 생성 섹션 --- */}
-        <section className="feature-section">
-          <h2>새로운 보드게임 컨셉 생성</h2>
-          <form onSubmit={handleGenerateConcept} className="concept-form">
-            <div className="form-group">
-              <label htmlFor="theme">테마:</label>
-              <input
-                type="text"
-                id="theme"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                placeholder="예: 중세 판타지, SF 우주, 현대 도시"
-                required
-              />
+                {gameObjective && (
+                    <div className={resultSectionStyle}>
+                        <div className="mb-6">
+                            <h2 className={resultTitleStyle}>🎯 주요 목표 (Main Goal)</h2>
+                            <p className={resultTextStyle}>{gameObjective.mainGoal}</p>
+                        </div>
+
+                        <div className="mb-6">
+                            <h2 className={resultTitleStyle}>📜 보조 목표 (Sub Goals)</h2>
+                            <ul className={subGoalListStyle}>
+                                {gameObjective.subGoals.map((goal, index) => (
+                                    <li key={index} className={resultTextStyle}>{goal}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="mb-6">
+                            <h2 className={resultTitleStyle}>🏆 승리 조건 유형 (Win Condition)</h2>
+                            <p className={resultTextStyle}>{gameObjective.winConditionType}</p>
+                        </div>
+
+                        <div>
+                            <h2 className={resultTitleStyle}>✍️ 디자이너 노트 (Design Note)</h2>
+                            <p className={resultTextStyle}>{gameObjective.designNote}</p>
+                        </div>
+                    </div>
+                )}
             </div>
-            <div className="form-group">
-              <label htmlFor="playerCount">플레이 인원수:</label>
-              <input
-                type="text"
-                id="playerCount"
-                value={playerCount}
-                onChange={(e) => setPlayerCount(e.target.value)}
-                placeholder="예: 2~4명, 3명, 5명"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="averageWeight">난이도 (1.0~5.0):</label>
-              <input
-                type="number"
-                id="averageWeight"
-                value={averageWeight}
-                onChange={(e) => setAverageWeight(e.target.value)}
-                min="1.0"
-                max="5.0"
-                step="0.1"
-                required
-              />
-            </div>
-            <button type="submit" disabled={loadingConcept}>
-              {loadingConcept ? '컨셉 생성 중...' : '컨셉 생성하기'}
-            </button>
-          </form>
-
-          {errorConcept && <p className="error-message">오류: {errorConcept}</p>}
-
-          {concept && (
-            <div className="concept-result">
-              <h3>생성된 컨셉:</h3>
-              <p><strong>컨셉 ID:</strong> {concept.conceptId}</p>
-              <p><strong>계획 ID:</strong> {concept.planId}</p>
-              <p><strong>테마:</strong> {concept.theme}</p>
-              <p><strong>플레이 인원수:</strong> {concept.playerCount}</p>
-              <p><strong>난이도:</strong> {concept.averageWeight.toFixed(1)}</p>
-              <h4>핵심 아이디어:</h4>
-              <p>{concept.ideaText}</p>
-              <h4>주요 메커니즘:</h4>
-              <p>{concept.mechanics}</p>
-              <h4>배경 스토리:</h4>
-              <p>{concept.storyline}</p>
-              <p className="created-at">생성 시간: {new Date(concept.createdAt).toLocaleString('ko-KR')}</p>
-            </div>
-          )}
-        </section>
-
-        <hr /> {/* 구분선 */}
-
-        {/* --- 게임 목표 생성 섹션 --- */}
-        <section className="feature-section">
-          <h2>기존 컨셉 기반 게임 목표 생성</h2>
-          <form onSubmit={handleGenerateObjective} className="objective-form">
-            <div className="form-group">
-              <label htmlFor="objectiveConceptId">컨셉 ID:</label>
-              <input
-                type="number"
-                id="objectiveConceptId"
-                value={objectiveConceptId}
-                onChange={(e) => setObjectiveConceptId(e.target.value)}
-                placeholder="예: 1001 또는 12"
-                required
-              />
-            </div>
-            <button type="submit" disabled={loadingObjective}>
-              {loadingObjective ? '게임 목표 생성 중...' : '게임 목표 생성하기'}
-            </button>
-          </form>
-
-          {errorObjective && <p className="error-message">오류: {errorObjective}</p>}
-
-          {objective && (
-            <div className="objective-result">
-              <h3>생성된 게임 목표:</h3>
-              <p><strong>주요 목표:</strong> {objective.mainGoal}</p>
-              <p><strong>보조 목표:</strong> {objective.subGoals.join(', ')}</p>
-              <p><strong>승리 조건 유형:</strong> {objective.winConditionType}</p>
-              <h4>디자이너 노트:</h4>
-              <p>{objective.designNote}</p>
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
-  );
+        </div>
+    );
 }
 
 export default App;
