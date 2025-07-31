@@ -22,7 +22,8 @@ const ConceptRegenerator = () => {
         setLoading(true);
         setResult(null);
         try {
-            const response = await axios.post('http://localhost:8080/api/v1/regenerate/concept', 
+            // (수정) API 경로 변경
+            const response = await axios.post('http://localhost:8080/api/plans/regenerate-concept', 
                 { conceptId, planId, feedback });
             setResult(response.data);
         } catch (error) { alert(`컨셉 재생성 오류: ${error.message}`); }
@@ -52,7 +53,8 @@ const ComponentsRegenerator = () => {
         setLoading(true);
         setResult(null);
         try {
-            const response = await axios.post('http://localhost:8080/api/v1/regenerate/components', 
+            // (수정) API 경로 변경
+            const response = await axios.post('http://localhost:8080/api/plans/regenerate-components', 
                 { componentId, feedback });
             setResult(response.data);
         } catch (error) { alert(`구성요소 재생성 오류: ${error.message}`); }
@@ -79,7 +81,8 @@ const RuleRegenerator = () => {
         setLoading(true);
         setResult(null);
         try {
-            const response = await axios.post('http://localhost:8080/api/v1/regenerate/rule', 
+            // (수정) API 경로 변경
+            const response = await axios.post('http://localhost:8080/api/plans/regenerate-rule', 
                 { ruleId, feedback });
             setResult(response.data);
         } catch (error) { alert(`규칙 재생성 오류: ${error.message}`); }
