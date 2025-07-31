@@ -19,7 +19,7 @@ function GameRulePage() {
 
     try {
       // 분리된 스프링 부트의 규칙 생성 API 호출
-      const response = await axios.post('http://localhost:8080/api/v1/rules/generate', {
+      const response = await axios.post('http://localhost:8080/api/plans/generate-rule', {
         conceptId: parseInt(conceptId, 10),
       });
       setRules(response.data);
