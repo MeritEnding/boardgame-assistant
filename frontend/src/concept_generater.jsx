@@ -16,7 +16,7 @@ function App() {
     setConcept(null); // 이전 결과 초기화
 
     try {
-      const response = await fetch('http://localhost:8080/generate-concept', {
+      const response = await fetch('http://localhost:8080/api/plans/generate-concept', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
