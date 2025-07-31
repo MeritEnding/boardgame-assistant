@@ -33,7 +33,7 @@ function App() {
 
         try {
             // Spring Boot 백엔드 API 엔드포인트 호출
-            const response = await fetch('http://localhost:8080/api/v1/games/generate-goal', {
+            const response = await fetch('http://localhost:8080/api/plans/generate-goal', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
