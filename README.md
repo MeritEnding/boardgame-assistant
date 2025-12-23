@@ -1,5 +1,9 @@
 # Boardgame Assistant
 
+## 📁 Notion (작업일지)
+https://www.notion.so/2d247577abe6807996efda9e85e7c788?v=2d247577abe680fea527000c73e7aa4b
+
+
 AI 기반 보드게임 기획/개발 어시스턴트 
 - 백엔드: Java 17 / Gradle / Spring Boot 3.5.3
 - 프론트엔드: React (CRA 기반)
